@@ -15,17 +15,24 @@ struct QuadDshotPio <P : PIOExt + FunctionConfig> {
 
 #[allow(dead_code)]
 impl<P : PIOExt + FunctionConfig> QuadDshotPio<P> {
-    pub fn new<I0,I1,I2,I3>(pio_block: P, resets : & mut pac::RESETS, pin0 : Pin<I0,Function<P>>,pin1 : Pin<I1,Function<P>>,pin2 : Pin<I2,Function<P>>,pin3 : Pin<I3,Function<P>>, clk_div : (u16,u8)) -> Self
+    pub fn new<I0,I1,I2,I3>(
+        pio_block: P,
+        resets : & mut pac::RESETS,
+        _pin0 : Pin<I0,Function<P>>,
+        _pin1 : Pin<I1,Function<P>>,
+        _pin2 : Pin<I2,Function<P>>,
+        _pin3 : Pin<I3,Function<P>>,
+        clk_div : (u16,u8)
+    ) -> Self
     where
-        I0:PinId+BankPinId,
-        I1:PinId+BankPinId,
-        I2:PinId+BankPinId,
-        I3:PinId+BankPinId,
-
-        Function<P>: ValidPinMode<I0>,
-        Function<P>: ValidPinMode<I1>,
-        Function<P>: ValidPinMode<I2>,
-        Function<P>: ValidPinMode<I3>,
+        I0 : PinId+BankPinId,
+        I1 : PinId+BankPinId,
+        I2 : PinId+BankPinId,
+        I3 : PinId+BankPinId,
+        Function<P> : ValidPinMode<I0>,
+        Function<P> : ValidPinMode<I1>,
+        Function<P> : ValidPinMode<I2>,
+        Function<P> : ValidPinMode<I3>,
     {
 
         // Split the PIO block into individual state machines
@@ -63,48 +70,50 @@ impl<P : PIOExt + FunctionConfig> QuadDshotPio<P> {
             "   jmp entry [31]"
         );
 
+        I0::DYN.num;
+
         // Install dshot program into PIO block
         let installed = pio.install(&dshot_pio_program.program).unwrap();
 
         // Configure the four state machines
         let (mut sm0x, _, tx0)=
             rp2040_hal::pio::PIOBuilder::from_program( unsafe { installed.share() } )
-            .set_pins(pin0.id().num, 1)
-            .clock_divisor_fixed_point(clk_div.0,clk_div.1) // (1,64) => DSHOT1200 , (2,128) => DSHOT600 , (5,0) => DSHOT300 , (10,0) => DSHOT150
+            .set_pins(I0::DYN.num, 1)
+            .clock_divisor_fixed_point(clk_div.0,clk_div.1)
             .pull_threshold(32)
             .autopull(true)
             .build(sm0);
-        sm0x.set_pindirs([(pin0.id().num, PinDir::Output)]);
+        sm0x.set_pindirs([(I0::DYN.num, PinDir::Output)]);
         sm0x.start();
         
         let (mut sm1x, _, tx1) =
             rp2040_hal::pio::PIOBuilder::from_program( unsafe { installed.share() } )
-            .set_pins(pin1.id().num, 1)
-            .clock_divisor_fixed_point(clk_div.0,clk_div.1) // (1,64) => DSHOT1200 , (2,128) => DSHOT600 , (5,0) => DSHOT300 , (10,0) => DSHOT150
+            .set_pins(I1::DYN.num, 1)
+            .clock_divisor_fixed_point(clk_div.0,clk_div.1)
             .pull_threshold(32)
             .autopull(true)
             .build(sm1);
-        sm1x.set_pindirs([(pin1.id().num, PinDir::Output)]);
+        sm1x.set_pindirs([(I1::DYN.num, PinDir::Output)]);
         sm1x.start();
         
         let (mut sm2x, _, tx2) =
             rp2040_hal::pio::PIOBuilder::from_program( unsafe { installed.share() } )
-            .set_pins(pin2.id().num, 1)
-            .clock_divisor_fixed_point(clk_div.0,clk_div.1) // (1,64) => DSHOT1200 , (2,128) => DSHOT600 , (5,0) => DSHOT300 , (10,0) => DSHOT150
+            .set_pins(I2::DYN.num, 1)
+            .clock_divisor_fixed_point(clk_div.0,clk_div.1)
             .pull_threshold(32)
             .autopull(true)
             .build(sm2);
-        sm2x.set_pindirs([(pin2.id().num, PinDir::Output)]);
+        sm2x.set_pindirs([(I2::DYN.num, PinDir::Output)]);
         sm2x.start();
         
         let (mut sm3x, _, tx3) =
             rp2040_hal::pio::PIOBuilder::from_program( unsafe { installed.share() } )
-            .set_pins(pin3.id().num, 1)
-            .clock_divisor_fixed_point(clk_div.0,clk_div.1) // (1,64) => DSHOT1200 , (2,128) => DSHOT600 , (5,0) => DSHOT300 , (10,0) => DSHOT150
+            .set_pins(I3::DYN.num, 1)
+            .clock_divisor_fixed_point(clk_div.0,clk_div.1)
             .pull_threshold(32)
             .autopull(true)
             .build(sm3);
-        sm3x.set_pindirs([(pin3.id().num, PinDir::Output)]);
+        sm3x.set_pindirs([(I3::DYN.num, PinDir::Output)]);
         sm3x.start();
 
         // Return struct of four configured DSHOT state machines
