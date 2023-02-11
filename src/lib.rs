@@ -1,3 +1,5 @@
+#![no_std]
+
 use rp2040_hal as hal;
 use hal::gpio::{Pin, PinId, ValidPinMode, Function, FunctionConfig, bank0::BankPinId};
 use hal::pio::{PIOExt, PinDir, Tx, SM0, SM1, SM2, SM3};
