@@ -1,0 +1,13 @@
+[package]
+name = "quad-dshot-pio"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rp2040-hal = { git = "https://github.com/rp-rs/rp-hal" }
+dshot-encoder = {git = "https://github.com/peterkrull/dshot-encoder"}
+pio-proc = "0.2.1"
+pio = "0.2.1"
+
