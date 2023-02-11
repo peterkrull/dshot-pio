@@ -6,11 +6,11 @@ use hal::pac;
 
 
 #[allow(dead_code)]
-struct QuadDshotPio <P : PIOExt + FunctionConfig> {
-    motor0 : Tx<(P,SM0)>,
-    motor1 : Tx<(P,SM1)>,
-    motor2 : Tx<(P,SM2)>,
-    motor3 : Tx<(P,SM3)>,
+pub struct QuadDshotPio <P : PIOExt + FunctionConfig> {
+    pub motor0 : Tx<(P,SM0)>,
+    pub motor1 : Tx<(P,SM1)>,
+    pub motor2 : Tx<(P,SM2)>,
+    pub motor3 : Tx<(P,SM3)>,
 }
 
 #[allow(dead_code)]
