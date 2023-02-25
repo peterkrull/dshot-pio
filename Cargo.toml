@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 dshot-encoder = {git = "https://github.com/peterkrull/dshot-encoder"}
-rp2040-hal = "~0.7"
+rp2040-hal = "~0"
 pio-proc = "~0.2"
 pio = "~0.2"
 
