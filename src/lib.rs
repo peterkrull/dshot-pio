@@ -1,30 +1,28 @@
 #![no_std]
 
 use dshot_encoder as dshot;
-use hal::gpio::{bank0::BankPinId, Function, FunctionConfig, Pin, PinId, ValidPinMode};
-use hal::pac;
-use hal::pio::{PIOExt, PinDir, Tx, SM0, SM1, SM2, SM3};
-use rp2040_hal as hal;
+use rp2040_hal::{
+    gpio::{bank0::BankPinId, Function, FunctionConfig, Pin, PinId, ValidPinMode},
+    pio::{PIOExt, PinDir, Tx, SM0, SM1, SM2, SM3, InstallError,PIOBuilder},
+    pac::RESETS,
+};
 
 #[allow(dead_code)]
 pub struct QuadDshotPio<P: PIOExt + FunctionConfig> {
-    pub motor0: Tx<(P, SM0)>,
-    pub motor1: Tx<(P, SM1)>,
-    pub motor2: Tx<(P, SM2)>,
-    pub motor3: Tx<(P, SM3)>,
+    pub motor: ( Tx<(P, SM0)>, Tx<(P, SM1)>, Tx<(P, SM2)>, Tx<(P, SM3)> )
 }
 
 #[allow(dead_code)]
 impl<P: PIOExt + FunctionConfig> QuadDshotPio<P> {
     pub fn new<I0, I1, I2, I3>(
         pio_block: P,
-        resets: &mut pac::RESETS,
+        resets: &mut RESETS,
         _pin0: Pin<I0, Function<P>>,
         _pin1: Pin<I1, Function<P>>,
         _pin2: Pin<I2, Function<P>>,
         _pin3: Pin<I3, Function<P>>,
         clk_div: (u16, u8),
-    ) -> Self
+    ) -> Result< QuadDshotPio<P>, InstallError >
     where
         I0: PinId + BankPinId,
         I1: PinId + BankPinId,
@@ -64,14 +62,12 @@ impl<P: PIOExt + FunctionConfig> QuadDshotPio<P> {
             "   jmp entry [31]"
         );
 
-        I0::DYN.num;
-
         // Install dshot program into PIO block
-        let installed = pio.install(&dshot_pio_program.program).unwrap();
+        let installed = pio.install(&dshot_pio_program.program)?;
 
         // Configure the four state machines
         let (mut sm0x, _, tx0) =
-            rp2040_hal::pio::PIOBuilder::from_program(unsafe { installed.share() })
+            PIOBuilder::from_program(unsafe { installed.share() })
                 .set_pins(I0::DYN.num, 1)
                 .clock_divisor_fixed_point(clk_div.0, clk_div.1)
                 .pull_threshold(32)
@@ -81,7 +77,7 @@ impl<P: PIOExt + FunctionConfig> QuadDshotPio<P> {
         sm0x.start();
 
         let (mut sm1x, _, tx1) =
-            rp2040_hal::pio::PIOBuilder::from_program(unsafe { installed.share() })
+            PIOBuilder::from_program(unsafe { installed.share() })
                 .set_pins(I1::DYN.num, 1)
                 .clock_divisor_fixed_point(clk_div.0, clk_div.1)
                 .pull_threshold(32)
@@ -91,7 +87,7 @@ impl<P: PIOExt + FunctionConfig> QuadDshotPio<P> {
         sm1x.start();
 
         let (mut sm2x, _, tx2) =
-            rp2040_hal::pio::PIOBuilder::from_program(unsafe { installed.share() })
+            PIOBuilder::from_program(unsafe { installed.share() })
                 .set_pins(I2::DYN.num, 1)
                 .clock_divisor_fixed_point(clk_div.0, clk_div.1)
                 .pull_threshold(32)
@@ -101,7 +97,7 @@ impl<P: PIOExt + FunctionConfig> QuadDshotPio<P> {
         sm2x.start();
 
         let (mut sm3x, _, tx3) =
-            rp2040_hal::pio::PIOBuilder::from_program(unsafe { installed.share() })
+            PIOBuilder::from_program(unsafe { installed.share() })
                 .set_pins(I3::DYN.num, 1)
                 .clock_divisor_fixed_point(clk_div.0, clk_div.1)
                 .pull_threshold(32)
@@ -111,42 +107,35 @@ impl<P: PIOExt + FunctionConfig> QuadDshotPio<P> {
         sm3x.start();
 
         // Return struct of four configured DSHOT state machines
-        QuadDshotPio {
-            motor0: tx0,
-            motor1: tx1,
-            motor2: tx2,
-            motor3: tx3,
-        }
+        Ok(QuadDshotPio {
+            motor: ( tx0, tx1, tx2, tx3 )
+        })
     }
 
     pub fn reverse(&mut self, reverse: (bool, bool, bool, bool)) -> (bool, bool, bool, bool) {
         (
-            self.motor0.write(dshot::reverse(reverse.0) as u32),
-            self.motor1.write(dshot::reverse(reverse.1) as u32),
-            self.motor2.write(dshot::reverse(reverse.2) as u32),
-            self.motor3.write(dshot::reverse(reverse.3) as u32),
+            self.motor.0.write(dshot::reverse(reverse.0) as u32),
+            self.motor.1.write(dshot::reverse(reverse.1) as u32),
+            self.motor.2.write(dshot::reverse(reverse.2) as u32),
+            self.motor.3.write(dshot::reverse(reverse.3) as u32),
         )
     }
 
     pub fn throttle_clamp(&mut self, throttle: (u16, u16, u16, u16)) -> (bool, bool, bool, bool) {
         (
-            self.motor0
-                .write(dshot::throttle_clamp(throttle.0, false) as u32),
-            self.motor1
-                .write(dshot::throttle_clamp(throttle.1, false) as u32),
-            self.motor2
-                .write(dshot::throttle_clamp(throttle.2, false) as u32),
-            self.motor3
-                .write(dshot::throttle_clamp(throttle.3, false) as u32),
+            self.motor.0.write(dshot::throttle_clamp(throttle.0, false) as u32),
+            self.motor.1.write(dshot::throttle_clamp(throttle.1, false) as u32),
+            self.motor.2.write(dshot::throttle_clamp(throttle.2, false) as u32),
+            self.motor.3.write(dshot::throttle_clamp(throttle.3, false) as u32),
         )
     }
 
     pub fn throttle_minimum(&mut self) -> (bool, bool, bool, bool) {
         (
-            self.motor0.write(dshot::throttle_minimum(false) as u32),
-            self.motor1.write(dshot::throttle_minimum(false) as u32),
-            self.motor2.write(dshot::throttle_minimum(false) as u32),
-            self.motor3.write(dshot::throttle_minimum(false) as u32),
+            self.motor.0.write(dshot::throttle_minimum(false) as u32),
+            self.motor.1.write(dshot::throttle_minimum(false) as u32),
+            self.motor.2.write(dshot::throttle_minimum(false) as u32),
+            self.motor.3.write(dshot::throttle_minimum(false) as u32),
         )
     }
 }
