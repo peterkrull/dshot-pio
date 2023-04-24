@@ -1,11 +1,17 @@
 [package]
 name = "quad-dshot-pio"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 
+[features]
+embassy-rp = ["dep:embassy-rp"]
+rp2040-hal = ["dep:rp2040-hal"]
+
 [dependencies]
-dshot-encoder = {git = "https://github.com/peterkrull/dshot-encoder"}
-rp2040-hal = "~0"
+dshot-encoder = { git = "https://github.com/peterkrull/dshot-encoder" }
+
 pio-proc = "~0.2"
 pio = "~0.2"
 
+rp2040-hal = { version = "~0", optional = true }
+embassy-rp = { git = "https://github.com/embassy-rs/embassy", features = ["pio"], optional = true }
