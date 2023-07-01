@@ -34,11 +34,11 @@ let quad_motors_rp2040_hal = QuadDshotPio::new(
 ```rust
 use quad_dshot_pio::embassy_rp::*;
 let quad_motors_embassy_rp = QuadDshotPio::new(
-    p.PIO0.split(),
-    p.PIN_13.degrade(),
-    p.PIN_7.degrade(),
-    p.PIN_6.degrade(),
-    p.PIN_12.degrade(),
+    p.PIO0,
+    p.PIN_13,
+    p.PIN_7,
+    p.PIN_6,
+    p.PIN_12,
     (52, 0) // clock divider
 );
 ```
