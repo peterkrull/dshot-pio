@@ -2,9 +2,9 @@ use dshot_encoder as dshot;
 pub use super::QuadDshotTrait;
 
 use embassy_rp::{
-    pio::{ Instance, Pio, Config, PioPin, ShiftConfig, ShiftDirection::Left},
+    pio::{ Instance, Pio, Config, PioPin, ShiftConfig, ShiftDirection::Left, InterruptHandler},
     relocate::RelocatedProgram,
-    Peripheral
+    Peripheral, interrupt::typelevel::Binding
 };
 #[allow(dead_code)]
 pub struct QuadDshotPio<'a,PIO : Instance> {
@@ -15,6 +15,7 @@ pub struct QuadDshotPio<'a,PIO : Instance> {
 impl <'a,PIO: Instance> QuadDshotPio<'a,PIO> {
     pub fn new(
         pio: impl Peripheral<P = PIO> + 'a,
+        irq: impl Binding<PIO::Interrupt, InterruptHandler<PIO>>,
         pin0: impl PioPin, pin1: impl PioPin, pin2: impl PioPin, pin3: impl PioPin,
         clk_div: (u16, u8),
     ) -> QuadDshotPio<'a,PIO> {
@@ -52,7 +53,7 @@ impl <'a,PIO: Instance> QuadDshotPio<'a,PIO> {
         // Configure state machines
 
         let mut cfg = Config::default();
-        let mut pio = Pio::new(pio);
+        let mut pio = Pio::new(pio,irq);
         cfg.use_program(&pio.common.load_program(&relocated), &[]);
         cfg.clock_divider = clk_div.0.into();
 
