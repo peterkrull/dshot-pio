@@ -3,7 +3,6 @@ pub use super::QuadDshotTrait;
 
 use embassy_rp::{
     pio::{ Instance, Pio, Config, PioPin, ShiftConfig, ShiftDirection::Left, InterruptHandler},
-    relocate::RelocatedProgram,
     Peripheral, interrupt::typelevel::Binding
 };
 #[allow(dead_code)]
@@ -48,13 +47,11 @@ impl <'a,PIO: Instance> QuadDshotPio<'a,PIO> {
             "   jmp entry [31]"
         );
 
-        let relocated = RelocatedProgram::new(&dshot_pio_program.program);
-
         // Configure state machines
 
         let mut cfg = Config::default();
         let mut pio = Pio::new(pio,irq);
-        cfg.use_program(&pio.common.load_program(&relocated), &[]);
+        cfg.use_program(&pio.common.load_program(&dshot_pio_program.program), &[]);
         cfg.clock_divider = clk_div.0.into();
 
         cfg.shift_in = ShiftConfig {
