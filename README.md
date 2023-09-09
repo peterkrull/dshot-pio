@@ -16,7 +16,7 @@ This clock divider is passed to the constructor in two parts, consisting of the 
 
 ## Construction
 
-Constructing the motor struct looks slightly different, depending on whether the `embassy-rp` or  `rp2040-hal` HAL is used. The functionality of the resulting struct is however shared through a trait. The number of Dshot drivers needed can be changed using the first number in the turbofish. 
+Constructing the motor struct looks slightly different, depending on whether the `rp2040-hal` or `embassy-rp`  HAL is used. The functionality of the resulting struct is however shared through a trait. The number of Dshot drivers needed can be changed using the first number in the turbofish. 
 
 ```rust
 use quad_dshot_pio::rp2040_hal::*;
@@ -46,6 +46,5 @@ let quad_motors_embassy = DshotPio::<4,_>::new(
     p.PIN_6,
     p.PIN_12,
     (52, 0) // clock divider
-)
-
+);
 ```
