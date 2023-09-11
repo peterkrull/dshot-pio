@@ -86,7 +86,7 @@ impl <'a,PIO: Instance> DshotPio<'a,1,PIO> {
         pio.sm0.set_config(&cfg);
         pio.sm0.set_enable(true);
 
-        // Return struct of 1 configured DSHOT state machine
+        // Return struct of 1 configured DShot state machine
         DshotPio { pio_instance : pio }
     }
 }
@@ -113,7 +113,7 @@ impl <'a,PIO: Instance> DshotPio<'a,2,PIO> {
         pio.sm1.set_config(&cfg);
         pio.sm1.set_enable(true);
 
-        // Return struct of 2 configured DSHOT state machines
+        // Return struct of 2 configured DShot state machines
         DshotPio { pio_instance : pio }
     }
 }
@@ -146,7 +146,7 @@ impl <'a,PIO: Instance> DshotPio<'a,3,PIO> {
         pio.sm2.set_config(&cfg);
         pio.sm2.set_enable(true);
         
-        // Return struct of 3 configured DSHOT state machines
+        // Return struct of 3 configured DShot state machines
         DshotPio { pio_instance : pio }
     }
 }
@@ -185,7 +185,7 @@ impl <'a,PIO: Instance> DshotPio<'a,4,PIO> {
         pio.sm3.set_config(&cfg);
         pio.sm3.set_enable(true);
 
-        // Return struct of 4 configured DSHOT state machines
+        // Return struct of 4 configured DShot state machines
         DshotPio { pio_instance : pio }
     }
 }
@@ -206,7 +206,7 @@ impl <'d,PIO : Instance> super::DshotPioTrait<1> for DshotPio<'d,1,PIO> {
         self.pio_instance.sm0.tx().push(dshot::throttle_clamp(throttle[0], false) as u32);
     }
 
-    /// Set the throttle for each motor to zero (Dshot command 48)
+    /// Set the throttle for each motor to zero (DShot command 48)
     fn throttle_minimum(&mut self) {
         self.pio_instance.sm0.tx().push(dshot::throttle_minimum(false) as u32);
     }
@@ -226,7 +226,7 @@ impl <'d,PIO : Instance> super::DshotPioTrait<2> for DshotPio<'d,2,PIO> {
         self.pio_instance.sm1.tx().push(dshot::throttle_clamp(throttle[1], false) as u32);
     }
 
-    /// Set the throttle for each motor to zero (Dshot command 48)
+    /// Set the throttle for each motor to zero (DShot command 48)
     fn throttle_minimum(&mut self) {
         self.pio_instance.sm0.tx().push(dshot::throttle_minimum(false) as u32);
         self.pio_instance.sm1.tx().push(dshot::throttle_minimum(false) as u32);
@@ -249,7 +249,7 @@ impl <'d,PIO : Instance> super::DshotPioTrait<3> for DshotPio<'d,3,PIO> {
         self.pio_instance.sm2.tx().push(dshot::throttle_clamp(throttle[2], false) as u32);
     }
 
-    /// Set the throttle for each motor to zero (Dshot command 48)
+    /// Set the throttle for each motor to zero (DShot command 48)
     fn throttle_minimum(&mut self) {
         self.pio_instance.sm0.tx().push(dshot::throttle_minimum(false) as u32);
         self.pio_instance.sm1.tx().push(dshot::throttle_minimum(false) as u32);
@@ -275,7 +275,7 @@ impl <'d,PIO : Instance> super::DshotPioTrait<4 > for DshotPio<'d,4,PIO> {
         self.pio_instance.sm3.tx().push(dshot::throttle_clamp(throttle[3], false) as u32);
     }
 
-    /// Set the throttle for each motor to zero (Dshot command 48)
+    /// Set the throttle for each motor to zero (DShot command 48)
     fn throttle_minimum(&mut self) {
         self.pio_instance.sm0.tx().push(dshot::throttle_minimum(false) as u32);
         self.pio_instance.sm1.tx().push(dshot::throttle_minimum(false) as u32);

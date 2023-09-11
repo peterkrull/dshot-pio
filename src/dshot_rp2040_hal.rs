@@ -21,7 +21,7 @@ fn configure_pio_instance<P: PIOExt>(
     // Split the PIO block into individual state machines
     let (mut pio, sm0, sm1, sm2, sm3) = pio_block.split(resets);
 
-    // Program that generates DSHOT signal in PIO state machine
+    // Program that generates DShot signal in PIO state machine
     let dshot_pio_program = pio_proc::pio_asm!(
         "entry:"
         "   pull"
@@ -47,7 +47,7 @@ fn configure_pio_instance<P: PIOExt>(
         "   jmp entry [31]"
     );
 
-    // Install dshot program into PIO block
+    // Install DShot program into PIO block
     (
         pio.install(&dshot_pio_program.program).expect("Unable to install program into PIO block"),
         sm0, sm1, sm2, sm3
@@ -67,7 +67,7 @@ impl<P: PIOExt> DshotPio<1,P> {
         clk_div: (u16, u8),
     ) -> DshotPio<1,P> {
 
-        // Install dshot program into PIO block
+        // Install DShot program into PIO block
         let (installed,sm0,sm1,sm2,sm3) = configure_pio_instance(pio_block, resets);
 
         // Configure the four state machines
@@ -86,7 +86,7 @@ impl<P: PIOExt> DshotPio<1,P> {
         let (_, _, tx2) = PIOBuilder::from_program(unsafe { installed.share() }).build(sm2);
         let (_, _, tx3) = PIOBuilder::from_program(unsafe { installed.share() }).build(sm3);
 
-        // Return struct of four configured DSHOT state machines
+        // Return struct of four configured DShot state machines
         DshotPio { sm0: tx0, sm1: tx1, sm2: tx2, sm3: tx3 }
     }
 }
@@ -101,7 +101,7 @@ impl<P: PIOExt> DshotPio<2,P> {
         clk_div: (u16, u8),
     ) -> DshotPio<2,P> {
 
-        // Install dshot program into PIO block
+        // Install DShot program into PIO block
         let (installed,sm0,sm1,sm2,sm3) = configure_pio_instance(pio_block, resets);
 
         // Configure the four state machines
@@ -129,7 +129,7 @@ impl<P: PIOExt> DshotPio<2,P> {
         let (_, _, tx2) = PIOBuilder::from_program(unsafe { installed.share() }).build(sm2);
         let (_, _, tx3) = PIOBuilder::from_program(unsafe { installed.share() }).build(sm3);
 
-        // Return struct of four configured DSHOT state machines
+        // Return struct of four configured DShot state machines
         DshotPio { sm0: tx0, sm1: tx1, sm2: tx2, sm3: tx3 }
     }
 }
@@ -145,7 +145,7 @@ impl<P: PIOExt> DshotPio<3,P> {
         clk_div: (u16, u8),
     ) -> DshotPio<3,P> {
 
-        // Install dshot program into PIO block
+        // Install DShot program into PIO block
         let (installed,sm0,sm1,sm2,sm3) = configure_pio_instance(pio_block, resets);
 
         // Configure the four state machines
@@ -182,7 +182,7 @@ impl<P: PIOExt> DshotPio<3,P> {
         // Setup dummy program for unused state machine
         let (_, _, tx3) = PIOBuilder::from_program(unsafe { installed.share() }).build(sm3);
 
-        // Return struct of four configured DSHOT state machines
+        // Return struct of four configured DShot state machines
         DshotPio { sm0: tx0, sm1: tx1, sm2: tx2, sm3: tx3 }
     }
 }
@@ -199,7 +199,7 @@ impl<P: PIOExt> DshotPio<4,P> {
         clk_div: (u16, u8),
     ) -> DshotPio<4,P> {
 
-        // Install dshot program into PIO block
+        // Install DShot program into PIO block
         let (installed,sm0,sm1,sm2,sm3) = configure_pio_instance(pio_block, resets);
 
         // Configure the four state machines
@@ -243,7 +243,7 @@ impl<P: PIOExt> DshotPio<4,P> {
         sm3x.set_pindirs([(pin3.as_dyn().num, PinDir::Output)]);
         sm3x.start();
 
-        // Return struct of four configured DSHOT state machines
+        // Return struct of four configured DShot state machines
         DshotPio { sm0: tx0, sm1: tx1, sm2: tx2, sm3: tx3 }
     }
 }
@@ -264,7 +264,7 @@ impl<P: PIOExt> super::DshotPioTrait<1> for DshotPio<1,P> {
         self.sm0.write(dshot::throttle_clamp(throttle[0], false) as u32);
     }
 
-    /// Set the throttle for each motor to zero (Dshot command 48)
+    /// Set the throttle for each motor to zero (DShot command 48)
     fn throttle_minimum(&mut self) {
         self.sm0.write(dshot::throttle_minimum(false) as u32);
     }
@@ -284,7 +284,7 @@ impl<P: PIOExt> super::DshotPioTrait<2> for DshotPio<2,P> {
         self.sm1.write(dshot::throttle_clamp(throttle[1], false) as u32);
     }
 
-    /// Set the throttle for each motor to zero (Dshot command 48)
+    /// Set the throttle for each motor to zero (DShot command 48)
     fn throttle_minimum(&mut self){
         self.sm0.write(dshot::throttle_minimum(false) as u32);
         self.sm1.write(dshot::throttle_minimum(false) as u32);
@@ -307,7 +307,7 @@ impl<P: PIOExt> super::DshotPioTrait<3> for DshotPio<3,P> {
         self.sm2.write(dshot::throttle_clamp(throttle[2], false) as u32);
     }
 
-    /// Set the throttle for each motor to zero (Dshot command 48)
+    /// Set the throttle for each motor to zero (DShot command 48)
     fn throttle_minimum(&mut self) {
         self.sm0.write(dshot::throttle_minimum(false) as u32);
         self.sm1.write(dshot::throttle_minimum(false) as u32);
@@ -333,7 +333,7 @@ impl<P: PIOExt> super::DshotPioTrait<4> for DshotPio<4,P> {
         self.sm3.write(dshot::throttle_clamp(throttle[3], false) as u32);
     }
 
-    /// Set the throttle for each motor to zero (Dshot command 48)
+    /// Set the throttle for each motor to zero (DShot command 48)
     fn throttle_minimum(&mut self) {
         self.sm0.write(dshot::throttle_minimum(false) as u32);
         self.sm1.write(dshot::throttle_minimum(false) as u32);
