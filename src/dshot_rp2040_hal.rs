@@ -63,7 +63,7 @@ impl<P: PIOExt> DshotPio<1,P> {
     pub fn new(
         pio_block: P,
         resets: &mut RESETS,
-        pin0 : impl AnyPin + PinId,
+        pin0: impl AnyPin + PinId,
         clk_div: (u16, u8),
     ) -> DshotPio<1,P> {
 
@@ -72,7 +72,7 @@ impl<P: PIOExt> DshotPio<1,P> {
 
         // Configure the four state machines
         let (mut sm0x, _, tx0) =
-            PIOBuilder::from_program(unsafe { installed.share() })
+            PIOBuilder::from_installed_program(unsafe { installed.share() })
                 .set_pins(pin0.as_dyn().num, 1)
                 .clock_divisor_fixed_point(clk_div.0, clk_div.1)
                 .pull_threshold(32)
@@ -82,9 +82,9 @@ impl<P: PIOExt> DshotPio<1,P> {
         sm0x.start();
 
         // Setup dummy program for unused state machine
-        let (_, _, tx1) = PIOBuilder::from_program(unsafe { installed.share() }).build(sm1);
-        let (_, _, tx2) = PIOBuilder::from_program(unsafe { installed.share() }).build(sm2);
-        let (_, _, tx3) = PIOBuilder::from_program(unsafe { installed.share() }).build(sm3);
+        let (_, _, tx1) = PIOBuilder::from_installed_program(unsafe { installed.share() }).build(sm1);
+        let (_, _, tx2) = PIOBuilder::from_installed_program(unsafe { installed.share() }).build(sm2);
+        let (_, _, tx3) = PIOBuilder::from_installed_program(unsafe { installed.share() }).build(sm3);
 
         // Return struct of four configured DShot state machines
         DshotPio { sm0: tx0, sm1: tx1, sm2: tx2, sm3: tx3 }
@@ -96,8 +96,8 @@ impl<P: PIOExt> DshotPio<2,P> {
     pub fn new(
         pio_block: P,
         resets: &mut RESETS,
-        pin0 : impl AnyPin + PinId,
-        pin1 : impl AnyPin + PinId,
+        pin0: impl AnyPin + PinId,
+        pin1: impl AnyPin + PinId,
         clk_div: (u16, u8),
     ) -> DshotPio<2,P> {
 
@@ -106,7 +106,7 @@ impl<P: PIOExt> DshotPio<2,P> {
 
         // Configure the four state machines
         let (mut sm0x, _, tx0) =
-            PIOBuilder::from_program(unsafe { installed.share() })
+            PIOBuilder::from_installed_program(unsafe { installed.share() })
                 .set_pins(pin0.as_dyn().num, 1)
                 .clock_divisor_fixed_point(clk_div.0, clk_div.1)
                 .pull_threshold(32)
@@ -116,7 +116,7 @@ impl<P: PIOExt> DshotPio<2,P> {
         sm0x.start();
 
         let (mut sm1x, _, tx1) =
-            PIOBuilder::from_program(unsafe { installed.share() })
+            PIOBuilder::from_installed_program(unsafe { installed.share() })
                 .set_pins(pin1.as_dyn().num, 1)
                 .clock_divisor_fixed_point(clk_div.0, clk_div.1)
                 .pull_threshold(32)
@@ -126,8 +126,8 @@ impl<P: PIOExt> DshotPio<2,P> {
         sm1x.start();
 
         // Setup dummy program for unused state machine
-        let (_, _, tx2) = PIOBuilder::from_program(unsafe { installed.share() }).build(sm2);
-        let (_, _, tx3) = PIOBuilder::from_program(unsafe { installed.share() }).build(sm3);
+        let (_, _, tx2) = PIOBuilder::from_installed_program(unsafe { installed.share() }).build(sm2);
+        let (_, _, tx3) = PIOBuilder::from_installed_program(unsafe { installed.share() }).build(sm3);
 
         // Return struct of four configured DShot state machines
         DshotPio { sm0: tx0, sm1: tx1, sm2: tx2, sm3: tx3 }
@@ -139,9 +139,9 @@ impl<P: PIOExt> DshotPio<3,P> {
     pub fn new(
         pio_block: P,
         resets: &mut RESETS,
-        pin0 : impl AnyPin + PinId,
-        pin1 : impl AnyPin + PinId,
-        pin2 : impl AnyPin + PinId,
+        pin0: impl AnyPin + PinId,
+        pin1: impl AnyPin + PinId,
+        pin2: impl AnyPin + PinId,
         clk_div: (u16, u8),
     ) -> DshotPio<3,P> {
 
@@ -150,7 +150,7 @@ impl<P: PIOExt> DshotPio<3,P> {
 
         // Configure the four state machines
         let (mut sm0x, _, tx0) =
-            PIOBuilder::from_program(unsafe { installed.share() })
+            PIOBuilder::from_installed_program(unsafe { installed.share() })
                 .set_pins(pin0.as_dyn().num, 1)
                 .clock_divisor_fixed_point(clk_div.0, clk_div.1)
                 .pull_threshold(32)
@@ -160,7 +160,7 @@ impl<P: PIOExt> DshotPio<3,P> {
         sm0x.start();
 
         let (mut sm1x, _, tx1) =
-            PIOBuilder::from_program(unsafe { installed.share() })
+            PIOBuilder::from_installed_program(unsafe { installed.share() })
                 .set_pins(pin1.as_dyn().num, 1)
                 .clock_divisor_fixed_point(clk_div.0, clk_div.1)
                 .pull_threshold(32)
@@ -170,7 +170,7 @@ impl<P: PIOExt> DshotPio<3,P> {
         sm1x.start();
 
         let (mut sm2x, _, tx2) =
-            PIOBuilder::from_program(unsafe { installed.share() })
+            PIOBuilder::from_installed_program(unsafe { installed.share() })
                 .set_pins(pin2.as_dyn().num, 1)
                 .clock_divisor_fixed_point(clk_div.0, clk_div.1)
                 .pull_threshold(32)
@@ -180,7 +180,7 @@ impl<P: PIOExt> DshotPio<3,P> {
         sm2x.start();
 
         // Setup dummy program for unused state machine
-        let (_, _, tx3) = PIOBuilder::from_program(unsafe { installed.share() }).build(sm3);
+        let (_, _, tx3) = PIOBuilder::from_installed_program(unsafe { installed.share() }).build(sm3);
 
         // Return struct of four configured DShot state machines
         DshotPio { sm0: tx0, sm1: tx1, sm2: tx2, sm3: tx3 }
@@ -192,10 +192,10 @@ impl<P: PIOExt> DshotPio<4,P> {
     pub fn new(
         pio_block: P,
         resets: &mut RESETS,
-        pin0 : impl AnyPin + PinId,
-        pin1 : impl AnyPin + PinId,
-        pin2 : impl AnyPin + PinId,
-        pin3 : impl AnyPin + PinId,
+        pin0: impl AnyPin + PinId,
+        pin1: impl AnyPin + PinId,
+        pin2: impl AnyPin + PinId,
+        pin3: impl AnyPin + PinId,
         clk_div: (u16, u8),
     ) -> DshotPio<4,P> {
 
@@ -204,7 +204,7 @@ impl<P: PIOExt> DshotPio<4,P> {
 
         // Configure the four state machines
         let (mut sm0x, _, tx0) =
-            PIOBuilder::from_program(unsafe { installed.share() })
+            PIOBuilder::from_installed_program(unsafe { installed.share() })
                 .set_pins(pin0.as_dyn().num, 1)
                 .clock_divisor_fixed_point(clk_div.0, clk_div.1)
                 .pull_threshold(32)
@@ -214,7 +214,7 @@ impl<P: PIOExt> DshotPio<4,P> {
         sm0x.start();
 
         let (mut sm1x, _, tx1) =
-            PIOBuilder::from_program(unsafe { installed.share() })
+            PIOBuilder::from_installed_program(unsafe { installed.share() })
                 .set_pins(pin1.as_dyn().num, 1)
                 .clock_divisor_fixed_point(clk_div.0, clk_div.1)
                 .pull_threshold(32)
@@ -224,7 +224,7 @@ impl<P: PIOExt> DshotPio<4,P> {
         sm1x.start();
 
         let (mut sm2x, _, tx2) =
-            PIOBuilder::from_program(unsafe { installed.share() })
+            PIOBuilder::from_installed_program(unsafe { installed.share() })
                 .set_pins(pin2.as_dyn().num, 1)
                 .clock_divisor_fixed_point(clk_div.0, clk_div.1)
                 .pull_threshold(32)
@@ -234,7 +234,7 @@ impl<P: PIOExt> DshotPio<4,P> {
         sm2x.start();
 
         let (mut sm3x, _, tx3) =
-            PIOBuilder::from_program(unsafe { installed.share() })
+            PIOBuilder::from_installed_program(unsafe { installed.share() })
                 .set_pins(pin3.as_dyn().num, 1)
                 .clock_divisor_fixed_point(clk_div.0, clk_div.1)
                 .pull_threshold(32)
@@ -254,6 +254,11 @@ impl<P: PIOExt> DshotPio<4,P> {
 
 impl<P: PIOExt> super::DshotPioTrait<1> for DshotPio<1,P> {
 
+    /// Send any valid DShot value to the ESC.
+    fn command(&mut self, command: [u16;1]) {
+        self.sm0.write(command[0].min(dshot::THROTTLE_MAX) as u32);
+    }
+
     /// Set the direction of rotation for each motor
     fn reverse(&mut self, reverse: [bool;1]) {
         self.sm0.write(dshot::reverse(reverse[0]) as u32);
@@ -271,6 +276,12 @@ impl<P: PIOExt> super::DshotPioTrait<1> for DshotPio<1,P> {
 }
 
 impl<P: PIOExt> super::DshotPioTrait<2> for DshotPio<2,P> {
+
+    /// Send any valid DShot value to the ESC.
+    fn command(&mut self, command: [u16; 2]) {
+        self.sm0.write(command[0].min(dshot::THROTTLE_MAX) as u32);
+        self.sm0.write(command[1].min(dshot::THROTTLE_MAX) as u32);
+    }
 
     /// Set the direction of rotation for each motor
     fn reverse(&mut self, reverse: [bool;2]) {
@@ -292,6 +303,13 @@ impl<P: PIOExt> super::DshotPioTrait<2> for DshotPio<2,P> {
 }
 
 impl<P: PIOExt> super::DshotPioTrait<3> for DshotPio<3,P> {
+
+    /// Send any valid DShot value to the ESC.
+    fn command(&mut self, command: [u16; 3]) {
+        self.sm0.write(command[0].min(dshot::THROTTLE_MAX) as u32);
+        self.sm0.write(command[1].min(dshot::THROTTLE_MAX) as u32);
+        self.sm0.write(command[2].min(dshot::THROTTLE_MAX) as u32);
+    }
 
     /// Set the direction of rotation for each motor
     fn reverse(&mut self, reverse: [bool;3]){
@@ -316,6 +334,14 @@ impl<P: PIOExt> super::DshotPioTrait<3> for DshotPio<3,P> {
 }
 
 impl<P: PIOExt> super::DshotPioTrait<4> for DshotPio<4,P> {
+
+    /// Send any valid DShot value to the ESC.
+    fn command(&mut self, command: [u16; 4]) {
+        self.sm0.write(command[0].min(dshot::THROTTLE_MAX) as u32);
+        self.sm0.write(command[1].min(dshot::THROTTLE_MAX) as u32);
+        self.sm0.write(command[2].min(dshot::THROTTLE_MAX) as u32);
+        self.sm0.write(command[3].min(dshot::THROTTLE_MAX) as u32);
+    }
 
     /// Set the direction of rotation for each motor
     fn reverse(&mut self, reverse: [bool;4]) {
