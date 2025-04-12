@@ -1,23 +1,34 @@
-use dshot_encoder as dshot;
 pub use super::DshotPioTrait;
+use dshot_encoder as dshot;
 
 use rp2040_hal::{
-    gpio::{PinId, AnyPin},
-    pio::{PIOExt, PinDir, Tx, SM0, SM1, SM2, SM3, PIOBuilder},
+    gpio::{AnyPin, PinId},
     pac::RESETS,
+    pio::{
+        InstalledProgram, PIOBuilder, PIOExt, PinDir, ShiftDirection, StateMachineIndex, Tx,
+        UninitStateMachine, SM0, SM1, SM2, SM3,
+    },
 };
 
-pub struct DshotPio<const N : usize, P: PIOExt> {
+pub struct DshotPio<const N: usize, P: PIOExt> {
     sm0: Tx<(P, SM0)>,
     sm1: Tx<(P, SM1)>,
     sm2: Tx<(P, SM2)>,
-    sm3: Tx<(P, SM3)>
+    sm3: Tx<(P, SM3)>,
 }
 
 fn configure_pio_instance<P: PIOExt>(
     pio_block: P,
     resets: &mut RESETS,
-) -> (rp2040_hal::pio::InstalledProgram<P>, rp2040_hal::pio::UninitStateMachine<(P, SM0)>, rp2040_hal::pio::UninitStateMachine<(P, SM1)>, rp2040_hal::pio::UninitStateMachine<(P, SM2)>, rp2040_hal::pio::UninitStateMachine<(P, SM3)>) {
+) -> (
+    InstalledProgram<P>,
+    (
+        UninitStateMachine<(P, SM0)>,
+        UninitStateMachine<(P, SM1)>,
+        UninitStateMachine<(P, SM2)>,
+        UninitStateMachine<(P, SM3)>,
+    ),
+) {
     // Split the PIO block into individual state machines
     let (mut pio, sm0, sm1, sm2, sm3) = pio_block.split(resets);
 
@@ -49,146 +60,136 @@ fn configure_pio_instance<P: PIOExt>(
 
     // Install DShot program into PIO block
     (
-        pio.install(&dshot_pio_program.program).expect("Unable to install program into PIO block"),
-        sm0, sm1, sm2, sm3
+        pio.install(&dshot_pio_program.program)
+            .expect("Unable to install program into PIO block"),
+        (sm0, sm1, sm2, sm3),
     )
 }
 
 ///
 /// Defining constructor functions
-/// 
+///
+
+fn setup_state_machine<P: PIOExt, SM: StateMachineIndex>(
+    installed: &InstalledProgram<P>,
+    sm: UninitStateMachine<(P, SM)>,
+    clk_div: (u16, u8),
+    pin: impl PinId,
+) -> Tx<(P, SM)> {
+    // SAFETY: We never uninstall the program, so all unsafety considerations are met
+    let (mut smx, _, tx) = PIOBuilder::from_installed_program(unsafe { installed.share() })
+        .set_pins(pin.as_dyn().num, 1)
+        .clock_divisor_fixed_point(clk_div.0, clk_div.1)
+        .out_shift_direction(ShiftDirection::Left)
+        .pull_threshold(32)
+        .autopull(true)
+        .build(sm);
+
+    smx.set_pindirs([(pin.as_dyn().num, PinDir::Output)]);
+    smx.start(); // NOTE: This consumes the state machine
+    tx
+}
+
+fn dummy_state_machine<P: PIOExt, SM: StateMachineIndex>(
+    installed: &InstalledProgram<P>,
+    sm: UninitStateMachine<(P, SM)>,
+) -> Tx<(P, SM)> {
+    let (_, _, tx) = PIOBuilder::from_installed_program(unsafe { installed.share() }).build(sm);
+    tx
+}
 
 #[allow(dead_code)]
-impl<P: PIOExt> DshotPio<1,P> {
+impl<P: PIOExt> DshotPio<1, P> {
     pub fn new(
         pio_block: P,
         resets: &mut RESETS,
         pin0: impl AnyPin + PinId,
         clk_div: (u16, u8),
-    ) -> DshotPio<1,P> {
-
+    ) -> DshotPio<1, P> {
         // Install DShot program into PIO block
-        let (installed,sm0,sm1,sm2,sm3) = configure_pio_instance(pio_block, resets);
+        let (installed, sm) = configure_pio_instance(pio_block, resets);
 
-        // Configure the four state machines
-        let (mut sm0x, _, tx0) =
-            PIOBuilder::from_installed_program(unsafe { installed.share() })
-                .set_pins(pin0.as_dyn().num, 1)
-                .clock_divisor_fixed_point(clk_div.0, clk_div.1)
-                .pull_threshold(32)
-                .autopull(true)
-                .build(sm0);
-        sm0x.set_pindirs([(pin0.as_dyn().num, PinDir::Output)]);
-        sm0x.start();
+        // Configure the state machine
+        let tx0 = setup_state_machine(&installed, sm.0, clk_div, pin0);
 
-        // Setup dummy program for unused state machine
-        let (_, _, tx1) = PIOBuilder::from_installed_program(unsafe { installed.share() }).build(sm1);
-        let (_, _, tx2) = PIOBuilder::from_installed_program(unsafe { installed.share() }).build(sm2);
-        let (_, _, tx3) = PIOBuilder::from_installed_program(unsafe { installed.share() }).build(sm3);
+        // Setup dummy program for unused state machines
+        let tx1 = dummy_state_machine(&installed, sm.1);
+        let tx2 = dummy_state_machine(&installed, sm.2);
+        let tx3 = dummy_state_machine(&installed, sm.3);
 
         // Return struct of four configured DShot state machines
-        DshotPio { sm0: tx0, sm1: tx1, sm2: tx2, sm3: tx3 }
+        DshotPio {
+            sm0: tx0,
+            sm1: tx1,
+            sm2: tx2,
+            sm3: tx3,
+        }
     }
 }
 
 #[allow(dead_code)]
-impl<P: PIOExt> DshotPio<2,P> {
+impl<P: PIOExt> DshotPio<2, P> {
     pub fn new(
         pio_block: P,
         resets: &mut RESETS,
-        pin0: impl AnyPin + PinId,
-        pin1: impl AnyPin + PinId,
+        pin0: impl PinId,
+        pin1: impl PinId,
         clk_div: (u16, u8),
-    ) -> DshotPio<2,P> {
-
+    ) -> DshotPio<2, P> {
         // Install DShot program into PIO block
-        let (installed,sm0,sm1,sm2,sm3) = configure_pio_instance(pio_block, resets);
+        let (installed, sm) = configure_pio_instance(pio_block, resets);
 
-        // Configure the four state machines
-        let (mut sm0x, _, tx0) =
-            PIOBuilder::from_installed_program(unsafe { installed.share() })
-                .set_pins(pin0.as_dyn().num, 1)
-                .clock_divisor_fixed_point(clk_div.0, clk_div.1)
-                .pull_threshold(32)
-                .autopull(true)
-                .build(sm0);
-        sm0x.set_pindirs([(pin0.as_dyn().num, PinDir::Output)]);
-        sm0x.start();
+        // Configure the state machine
+        let tx0 = setup_state_machine(&installed, sm.0, clk_div, pin0);
+        let tx1 = setup_state_machine(&installed, sm.1, clk_div, pin1);
 
-        let (mut sm1x, _, tx1) =
-            PIOBuilder::from_installed_program(unsafe { installed.share() })
-                .set_pins(pin1.as_dyn().num, 1)
-                .clock_divisor_fixed_point(clk_div.0, clk_div.1)
-                .pull_threshold(32)
-                .autopull(true)
-                .build(sm1);
-        sm1x.set_pindirs([(pin1.as_dyn().num, PinDir::Output)]);
-        sm1x.start();
-
-        // Setup dummy program for unused state machine
-        let (_, _, tx2) = PIOBuilder::from_installed_program(unsafe { installed.share() }).build(sm2);
-        let (_, _, tx3) = PIOBuilder::from_installed_program(unsafe { installed.share() }).build(sm3);
+        // Setup dummy program for unused state machines
+        let tx2 = dummy_state_machine(&installed, sm.2);
+        let tx3 = dummy_state_machine(&installed, sm.3);
 
         // Return struct of four configured DShot state machines
-        DshotPio { sm0: tx0, sm1: tx1, sm2: tx2, sm3: tx3 }
+        DshotPio {
+            sm0: tx0,
+            sm1: tx1,
+            sm2: tx2,
+            sm3: tx3,
+        }
     }
 }
 
 #[allow(dead_code)]
-impl<P: PIOExt> DshotPio<3,P> {
+impl<P: PIOExt> DshotPio<3, P> {
     pub fn new(
         pio_block: P,
         resets: &mut RESETS,
-        pin0: impl AnyPin + PinId,
-        pin1: impl AnyPin + PinId,
-        pin2: impl AnyPin + PinId,
+        pin0: impl PinId,
+        pin1: impl PinId,
+        pin2: impl PinId,
         clk_div: (u16, u8),
-    ) -> DshotPio<3,P> {
-
+    ) -> DshotPio<3, P> {
         // Install DShot program into PIO block
-        let (installed,sm0,sm1,sm2,sm3) = configure_pio_instance(pio_block, resets);
+        let (installed, sm) = configure_pio_instance(pio_block, resets);
 
-        // Configure the four state machines
-        let (mut sm0x, _, tx0) =
-            PIOBuilder::from_installed_program(unsafe { installed.share() })
-                .set_pins(pin0.as_dyn().num, 1)
-                .clock_divisor_fixed_point(clk_div.0, clk_div.1)
-                .pull_threshold(32)
-                .autopull(true)
-                .build(sm0);
-        sm0x.set_pindirs([(pin0.as_dyn().num, PinDir::Output)]);
-        sm0x.start();
+        // Configure the state machine
+        let tx0 = setup_state_machine(&installed, sm.0, clk_div, pin0);
+        let tx1 = setup_state_machine(&installed, sm.1, clk_div, pin1);
+        let tx2 = setup_state_machine(&installed, sm.2, clk_div, pin2);
 
-        let (mut sm1x, _, tx1) =
-            PIOBuilder::from_installed_program(unsafe { installed.share() })
-                .set_pins(pin1.as_dyn().num, 1)
-                .clock_divisor_fixed_point(clk_div.0, clk_div.1)
-                .pull_threshold(32)
-                .autopull(true)
-                .build(sm1);
-        sm1x.set_pindirs([(pin1.as_dyn().num, PinDir::Output)]);
-        sm1x.start();
-
-        let (mut sm2x, _, tx2) =
-            PIOBuilder::from_installed_program(unsafe { installed.share() })
-                .set_pins(pin2.as_dyn().num, 1)
-                .clock_divisor_fixed_point(clk_div.0, clk_div.1)
-                .pull_threshold(32)
-                .autopull(true)
-                .build(sm2);
-        sm2x.set_pindirs([(pin2.as_dyn().num, PinDir::Output)]);
-        sm2x.start();
-
-        // Setup dummy program for unused state machine
-        let (_, _, tx3) = PIOBuilder::from_installed_program(unsafe { installed.share() }).build(sm3);
+        // Setup dummy program for unused state machines
+        let tx3 = dummy_state_machine(&installed, sm.3);
 
         // Return struct of four configured DShot state machines
-        DshotPio { sm0: tx0, sm1: tx1, sm2: tx2, sm3: tx3 }
+        DshotPio {
+            sm0: tx0,
+            sm1: tx1,
+            sm2: tx2,
+            sm3: tx3,
+        }
     }
 }
 
 #[allow(dead_code)]
-impl<P: PIOExt> DshotPio<4,P> {
+impl<P: PIOExt> DshotPio<4, P> {
     pub fn new(
         pio_block: P,
         resets: &mut RESETS,
@@ -197,70 +198,38 @@ impl<P: PIOExt> DshotPio<4,P> {
         pin2: impl AnyPin + PinId,
         pin3: impl AnyPin + PinId,
         clk_div: (u16, u8),
-    ) -> DshotPio<4,P> {
-
+    ) -> DshotPio<4, P> {
         // Install DShot program into PIO block
-        let (installed,sm0,sm1,sm2,sm3) = configure_pio_instance(pio_block, resets);
+        let (installed, sm) = configure_pio_instance(pio_block, resets);
 
-        // Configure the four state machines
-        let (mut sm0x, _, tx0) =
-            PIOBuilder::from_installed_program(unsafe { installed.share() })
-                .set_pins(pin0.as_dyn().num, 1)
-                .clock_divisor_fixed_point(clk_div.0, clk_div.1)
-                .pull_threshold(32)
-                .autopull(true)
-                .build(sm0);
-        sm0x.set_pindirs([(pin0.as_dyn().num, PinDir::Output)]);
-        sm0x.start();
-
-        let (mut sm1x, _, tx1) =
-            PIOBuilder::from_installed_program(unsafe { installed.share() })
-                .set_pins(pin1.as_dyn().num, 1)
-                .clock_divisor_fixed_point(clk_div.0, clk_div.1)
-                .pull_threshold(32)
-                .autopull(true)
-                .build(sm1);
-        sm1x.set_pindirs([(pin1.as_dyn().num, PinDir::Output)]);
-        sm1x.start();
-
-        let (mut sm2x, _, tx2) =
-            PIOBuilder::from_installed_program(unsafe { installed.share() })
-                .set_pins(pin2.as_dyn().num, 1)
-                .clock_divisor_fixed_point(clk_div.0, clk_div.1)
-                .pull_threshold(32)
-                .autopull(true)
-                .build(sm2);
-        sm2x.set_pindirs([(pin2.as_dyn().num, PinDir::Output)]);
-        sm2x.start();
-
-        let (mut sm3x, _, tx3) =
-            PIOBuilder::from_installed_program(unsafe { installed.share() })
-                .set_pins(pin3.as_dyn().num, 1)
-                .clock_divisor_fixed_point(clk_div.0, clk_div.1)
-                .pull_threshold(32)
-                .autopull(true)
-                .build(sm3);
-        sm3x.set_pindirs([(pin3.as_dyn().num, PinDir::Output)]);
-        sm3x.start();
+        // Configure the state machine
+        let tx0 = setup_state_machine(&installed, sm.0, clk_div, pin0);
+        let tx1 = setup_state_machine(&installed, sm.1, clk_div, pin1);
+        let tx2 = setup_state_machine(&installed, sm.2, clk_div, pin2);
+        let tx3 = setup_state_machine(&installed, sm.3, clk_div, pin3);
 
         // Return struct of four configured DShot state machines
-        DshotPio { sm0: tx0, sm1: tx1, sm2: tx2, sm3: tx3 }
+        DshotPio {
+            sm0: tx0,
+            sm1: tx1,
+            sm2: tx2,
+            sm3: tx3,
+        }
     }
 }
 
 ///
 /// Implementing DshotPioTrait
-/// 
+///
 
-impl<P: PIOExt> super::DshotPioTrait<1> for DshotPio<1,P> {
-
+impl<P: PIOExt> super::DshotPioTrait<1> for DshotPio<1, P> {
     /// Send any valid DShot value to the ESC.
-    fn command(&mut self, command: [u16;1]) {
+    fn command(&mut self, command: [u16; 1]) {
         self.sm0.write(command[0].min(dshot::THROTTLE_MAX) as u32);
     }
 
     /// Set the direction of rotation for each motor
-    fn reverse(&mut self, reverse: [bool;1]) {
+    fn reverse(&mut self, reverse: [bool; 1]) {
         self.sm0.write(dshot::reverse(reverse[0]) as u32);
     }
 
@@ -275,8 +244,7 @@ impl<P: PIOExt> super::DshotPioTrait<1> for DshotPio<1,P> {
     }
 }
 
-impl<P: PIOExt> super::DshotPioTrait<2> for DshotPio<2,P> {
-
+impl<P: PIOExt> super::DshotPioTrait<2> for DshotPio<2, P> {
     /// Send any valid DShot value to the ESC.
     fn command(&mut self, command: [u16; 2]) {
         self.sm0.write(command[0].min(dshot::THROTTLE_MAX) as u32);
@@ -284,7 +252,7 @@ impl<P: PIOExt> super::DshotPioTrait<2> for DshotPio<2,P> {
     }
 
     /// Set the direction of rotation for each motor
-    fn reverse(&mut self, reverse: [bool;2]) {
+    fn reverse(&mut self, reverse: [bool; 2]) {
         self.sm0.write(dshot::reverse(reverse[0]) as u32);
         self.sm1.write(dshot::reverse(reverse[1]) as u32);
     }
@@ -296,14 +264,13 @@ impl<P: PIOExt> super::DshotPioTrait<2> for DshotPio<2,P> {
     }
 
     /// Set the throttle for each motor to zero (DShot command 48)
-    fn throttle_minimum(&mut self){
+    fn throttle_minimum(&mut self) {
         self.sm0.write(dshot::throttle_minimum(false) as u32);
         self.sm1.write(dshot::throttle_minimum(false) as u32);
     }
 }
 
-impl<P: PIOExt> super::DshotPioTrait<3> for DshotPio<3,P> {
-
+impl<P: PIOExt> super::DshotPioTrait<3> for DshotPio<3, P> {
     /// Send any valid DShot value to the ESC.
     fn command(&mut self, command: [u16; 3]) {
         self.sm0.write(command[0].min(dshot::THROTTLE_MAX) as u32);
@@ -312,7 +279,7 @@ impl<P: PIOExt> super::DshotPioTrait<3> for DshotPio<3,P> {
     }
 
     /// Set the direction of rotation for each motor
-    fn reverse(&mut self, reverse: [bool;3]){
+    fn reverse(&mut self, reverse: [bool; 3]) {
         self.sm0.write(dshot::reverse(reverse[0]) as u32);
         self.sm1.write(dshot::reverse(reverse[1]) as u32);
         self.sm2.write(dshot::reverse(reverse[2]) as u32);
@@ -333,8 +300,7 @@ impl<P: PIOExt> super::DshotPioTrait<3> for DshotPio<3,P> {
     }
 }
 
-impl<P: PIOExt> super::DshotPioTrait<4> for DshotPio<4,P> {
-
+impl<P: PIOExt> super::DshotPioTrait<4> for DshotPio<4, P> {
     /// Send any valid DShot value to the ESC.
     fn command(&mut self, command: [u16; 4]) {
         self.sm0.write(command[0].min(dshot::THROTTLE_MAX) as u32);
@@ -344,7 +310,7 @@ impl<P: PIOExt> super::DshotPioTrait<4> for DshotPio<4,P> {
     }
 
     /// Set the direction of rotation for each motor
-    fn reverse(&mut self, reverse: [bool;4]) {
+    fn reverse(&mut self, reverse: [bool; 4]) {
         self.sm0.write(dshot::reverse(reverse[0]) as u32);
         self.sm1.write(dshot::reverse(reverse[1]) as u32);
         self.sm2.write(dshot::reverse(reverse[2]) as u32);
