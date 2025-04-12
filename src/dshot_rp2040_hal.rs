@@ -100,10 +100,10 @@ fn dummy_state_machine<P: PIOExt, SM: StateMachineIndex>(
 
 #[allow(dead_code)]
 impl<P: PIOExt> DshotPio<1, P> {
-    pub fn new<FN: Function, PT: PullType>(
+    pub fn new(
         pio_block: P,
         resets: &mut RESETS,
-        pin0: Pin<impl PinId, FN, PT>,
+        pin0: Pin<impl PinId, impl Function, impl PullType>,
         clk_div: (u16, u8),
     ) -> DshotPio<1, P> {
         // Install DShot program into PIO block
@@ -128,11 +128,11 @@ impl<P: PIOExt> DshotPio<1, P> {
 
 #[allow(dead_code)]
 impl<P: PIOExt> DshotPio<2, P> {
-    pub fn new<FN: Function, PT: PullType>(
+    pub fn new(
         pio_block: P,
         resets: &mut RESETS,
-        pin0: Pin<impl PinId, FN, PT>,
-        pin1: Pin<impl PinId, FN, PT>,
+        pin0: Pin<impl PinId, impl Function, impl PullType>,
+        pin1: Pin<impl PinId, impl Function, impl PullType>,
         clk_div: (u16, u8),
     ) -> DshotPio<2, P> {
         // Install DShot program into PIO block
@@ -158,12 +158,12 @@ impl<P: PIOExt> DshotPio<2, P> {
 
 #[allow(dead_code)]
 impl<P: PIOExt> DshotPio<3, P> {
-    pub fn new<FN: Function, PT: PullType>(
+    pub fn new(
         pio_block: P,
         resets: &mut RESETS,
-        pin0: Pin<impl PinId, FN, PT>,
-        pin1: Pin<impl PinId, FN, PT>,
-        pin2: Pin<impl PinId, FN, PT>,
+        pin0: Pin<impl PinId, impl Function, impl PullType>,
+        pin1: Pin<impl PinId, impl Function, impl PullType>,
+        pin2: Pin<impl PinId, impl Function, impl PullType>,
         clk_div: (u16, u8),
     ) -> DshotPio<3, P> {
         // Install DShot program into PIO block
@@ -189,13 +189,13 @@ impl<P: PIOExt> DshotPio<3, P> {
 
 #[allow(dead_code)]
 impl<P: PIOExt> DshotPio<4, P> {
-    pub fn new<FN: Function, PT: PullType>(
+    pub fn new(
         pio_block: P,
         resets: &mut RESETS,
-        pin0: Pin<impl PinId, FN, PT>,
-        pin1: Pin<impl PinId, FN, PT>,
-        pin2: Pin<impl PinId, FN, PT>,
-        pin3: Pin<impl PinId, FN, PT>,
+        pin0: Pin<impl PinId, impl Function, impl PullType>,
+        pin1: Pin<impl PinId, impl Function, impl PullType>,
+        pin2: Pin<impl PinId, impl Function, impl PullType>,
+        pin3: Pin<impl PinId, impl Function, impl PullType>,
         clk_div: (u16, u8),
     ) -> DshotPio<4, P> {
         // Install DShot program into PIO block
