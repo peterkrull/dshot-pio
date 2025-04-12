@@ -2,7 +2,7 @@ pub use super::DshotPioTrait;
 use dshot_encoder as dshot;
 
 use rp2040_hal::{
-    gpio::{Function, Pin, PinId, PullType},
+    gpio::{Function, Pin, PinId, PullType, ValidFunction},
     pac::RESETS,
     pio::{
         InstalledProgram, PIOBuilder, PIOExt, PinDir, ShiftDirection, StateMachineIndex, Tx,
@@ -74,18 +74,22 @@ fn setup_state_machine<P: PIOExt, SM: StateMachineIndex>(
     installed: &InstalledProgram<P>,
     sm: UninitStateMachine<(P, SM)>,
     clk_div: (u16, u8),
-    pin: impl PinId,
+    pin: Pin<impl PinId + ValidFunction<P::PinFunction>, impl Function, impl PullType>,
 ) -> Tx<(P, SM)> {
+
+    // Configure pin for use with this PIO block
+    let pin = pin.into_function::<P::PinFunction>();
+
     // SAFETY: We never uninstall the program, so all unsafety considerations are met
     let (mut smx, _, tx) = PIOBuilder::from_installed_program(unsafe { installed.share() })
-        .set_pins(pin.as_dyn().num, 1)
+        .set_pins(pin.id().num, 1)
         .clock_divisor_fixed_point(clk_div.0, clk_div.1)
         .out_shift_direction(ShiftDirection::Left)
         .pull_threshold(32)
         .autopull(true)
         .build(sm);
 
-    smx.set_pindirs([(pin.as_dyn().num, PinDir::Output)]);
+    smx.set_pindirs([(pin.id().num, PinDir::Output)]);
     smx.start(); // NOTE: This consumes the state machine
     tx
 }
@@ -100,16 +104,17 @@ fn dummy_state_machine<P: PIOExt, SM: StateMachineIndex>(
 
 #[allow(dead_code)]
 impl<P: PIOExt> DshotPio<1, P> {
-    pub fn new(
+    pub fn new<I0>(
         pio_block: P,
         resets: &mut RESETS,
-        pin0: Pin<impl PinId, impl Function, impl PullType>,
+        pin0: Pin<impl PinId + ValidFunction<P::PinFunction>, impl Function, impl PullType>,
         clk_div: (u16, u8),
     ) -> DshotPio<1, P> {
         // Install DShot program into PIO block
         let (installed, sm) = configure_pio_instance(pio_block, resets);
 
-        let tx0 = setup_state_machine(&installed, sm.0, clk_div, pin0.id());
+        // Configure the state machine
+        let tx0 = setup_state_machine(&installed, sm.0, clk_div, pin0);
 
         // Setup dummy program for unused state machines
         let tx1 = dummy_state_machine(&installed, sm.1);
@@ -131,16 +136,16 @@ impl<P: PIOExt> DshotPio<2, P> {
     pub fn new(
         pio_block: P,
         resets: &mut RESETS,
-        pin0: Pin<impl PinId, impl Function, impl PullType>,
-        pin1: Pin<impl PinId, impl Function, impl PullType>,
+        pin0: Pin<impl PinId + ValidFunction<P::PinFunction>, impl Function, impl PullType>,
+        pin1: Pin<impl PinId + ValidFunction<P::PinFunction>, impl Function, impl PullType>,
         clk_div: (u16, u8),
     ) -> DshotPio<2, P> {
         // Install DShot program into PIO block
         let (installed, sm) = configure_pio_instance(pio_block, resets);
 
         // Configure the state machine
-        let tx0 = setup_state_machine(&installed, sm.0, clk_div, pin0.id());
-        let tx1 = setup_state_machine(&installed, sm.1, clk_div, pin1.id());
+        let tx0 = setup_state_machine(&installed, sm.0, clk_div, pin0);
+        let tx1 = setup_state_machine(&installed, sm.1, clk_div, pin1);
 
         // Setup dummy program for unused state machines
         let tx2 = dummy_state_machine(&installed, sm.2);
@@ -161,18 +166,18 @@ impl<P: PIOExt> DshotPio<3, P> {
     pub fn new(
         pio_block: P,
         resets: &mut RESETS,
-        pin0: Pin<impl PinId, impl Function, impl PullType>,
-        pin1: Pin<impl PinId, impl Function, impl PullType>,
-        pin2: Pin<impl PinId, impl Function, impl PullType>,
+        pin0: Pin<impl PinId + ValidFunction<P::PinFunction>, impl Function, impl PullType>,
+        pin1: Pin<impl PinId + ValidFunction<P::PinFunction>, impl Function, impl PullType>,
+        pin2: Pin<impl PinId + ValidFunction<P::PinFunction>, impl Function, impl PullType>,
         clk_div: (u16, u8),
     ) -> DshotPio<3, P> {
         // Install DShot program into PIO block
         let (installed, sm) = configure_pio_instance(pio_block, resets);
 
         // Configure the state machine
-        let tx0 = setup_state_machine(&installed, sm.0, clk_div, pin0.id());
-        let tx1 = setup_state_machine(&installed, sm.1, clk_div, pin1.id());
-        let tx2 = setup_state_machine(&installed, sm.2, clk_div, pin2.id());
+        let tx0 = setup_state_machine(&installed, sm.0, clk_div, pin0);
+        let tx1 = setup_state_machine(&installed, sm.1, clk_div, pin1);
+        let tx2 = setup_state_machine(&installed, sm.2, clk_div, pin2);
 
         // Setup dummy program for unused state machines
         let tx3 = dummy_state_machine(&installed, sm.3);
@@ -192,20 +197,20 @@ impl<P: PIOExt> DshotPio<4, P> {
     pub fn new(
         pio_block: P,
         resets: &mut RESETS,
-        pin0: Pin<impl PinId, impl Function, impl PullType>,
-        pin1: Pin<impl PinId, impl Function, impl PullType>,
-        pin2: Pin<impl PinId, impl Function, impl PullType>,
-        pin3: Pin<impl PinId, impl Function, impl PullType>,
+        pin0: Pin<impl PinId + ValidFunction<P::PinFunction>, impl Function, impl PullType>,
+        pin1: Pin<impl PinId + ValidFunction<P::PinFunction>, impl Function, impl PullType>,
+        pin2: Pin<impl PinId + ValidFunction<P::PinFunction>, impl Function, impl PullType>,
+        pin3: Pin<impl PinId + ValidFunction<P::PinFunction>, impl Function, impl PullType>,
         clk_div: (u16, u8),
     ) -> DshotPio<4, P> {
         // Install DShot program into PIO block
         let (installed, sm) = configure_pio_instance(pio_block, resets);
 
         // Configure the state machine
-        let tx0 = setup_state_machine(&installed, sm.0, clk_div, pin0.id());
-        let tx1 = setup_state_machine(&installed, sm.1, clk_div, pin1.id());
-        let tx2 = setup_state_machine(&installed, sm.2, clk_div, pin2.id());
-        let tx3 = setup_state_machine(&installed, sm.3, clk_div, pin3.id());
+        let tx0 = setup_state_machine(&installed, sm.0, clk_div, pin0);
+        let tx1 = setup_state_machine(&installed, sm.1, clk_div, pin1);
+        let tx2 = setup_state_machine(&installed, sm.2, clk_div, pin2);
+        let tx3 = setup_state_machine(&installed, sm.3, clk_div, pin3);
 
         // Return struct of four configured DShot state machines
         DshotPio {
