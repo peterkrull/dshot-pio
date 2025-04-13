@@ -23,10 +23,10 @@ use dshot_pio::rp2040_hal::*;
 let dshot_rp2040_hal = DshotPio::<4,_>::new(
     pac.PIO0,
     &mut pac.RESETS,
-    pins.gpio13.into_mode(),
-    pins.gpio7.into_mode(),
-    pins.gpio6.into_mode(),
-    pins.gpio12.into_mode(),
+    pins.gpio13,
+    pins.gpio7,
+    pins.gpio6,
+    pins.gpio12,
     (52, 0) // clock divider
 );
 ```
@@ -39,12 +39,12 @@ bind_interrupts!( struct Pio0Irqs {
 
 use dshot_pio::embassy_rp::*;
 let dshot_embassy = DshotPio::<4,_>::new(
-    p.PIO0,
+    peri.PIO0,
     Pio0Irqs,
-    p.PIN_13,
-    p.PIN_7,
-    p.PIN_6,
-    p.PIN_12,
+    peri.PIN_13,
+    peri.PIN_7,
+    peri.PIN_6,
+    peri.PIN_12,
     (52, 0) // clock divider
 );
 ```
